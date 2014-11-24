@@ -163,8 +163,8 @@ relevant database tables and configuration elements to the new db and INI file.
 In Kilo, a fresh install will end up doing the following steps:
 
 * Install neutron.  Services package will be pulled in as a dependency,
-its installer will run before neutron, initializing db, writing default config,
-then neutron will install as normal.
+  its installer will run before neutron, initializing db, writing default
+  config, then neutron will install as normal.
 
 * Deployer will edit neutron.conf for db and other info.
 
@@ -175,8 +175,8 @@ then neutron will install as normal.
 In Kilo, an upgrade from Juno or Icehouse will do the following steps:
 
 * Install neutron.  Services package will be pulled in as a dependency,
-its installer will run before neutron, initializing db, writing default config,
-then neutron will install as normal.
+  its installer will run before neutron, initializing db, writing default
+  config, then neutron will install as normal.
 
 * Deployer will edit neutron.conf for db and other info.
 
