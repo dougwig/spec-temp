@@ -12,10 +12,7 @@ Include the URL of your launchpad blueprint:
 
 https://blueprints.launchpad.net/neutron/+spec/services-split
 
-This spec outlines the technical changes required for the repo split.  It is
-dependent upon the project split spec:
-
-TBD
+This spec outlines the technical changes required for the repo split.
 
 The following intro is shamelessly stolen from an email thread started by Mark McClain:
 
@@ -32,7 +29,7 @@ discovered that these concentrations have different velocities and a single
 core team forces one to match the other to the detriment of the one forced to
 slow down.
 
-Going forward we want to divide the Neutron repository into two separate
+Going forward we want to divide the Neutron repository into multiple separate
 repositories lead by a common Networking PTL.  The current mission of the
 program will remain unchanged.
 
@@ -41,21 +38,20 @@ Problem Description
 ===================
 
 This proposal deals with the technical aspects of splitting the neutron repo
-into two repos, one for basic L2/L3 plumbing, one for advanced services.  The repos will be referred to as "neutron" and "services" within this spec, until
+into two repos, one for basic L2/L3 plumbing, one for advanced services.  The
+repos will be referred to as "neutron" and "services" within this spec, until
 a project name for the "services" repo is selected.
 
 * Currently the neutron code is in a single repo, with a single set of cores.
 
-* After the split, we want all "services" code and db models will be in a new
+* After the split, all "services" code and db models will be in a new
   services repo, preserving history.
 
-* After the split, we want no services code to be in the neutron repo, with
+* After the split, no services code to be in the neutron repo, with
   non-relavant history pruned.
 
 * During the split, an infra/project-config change for the new repo, shared
   spec repo, and new core team will be created.
-
-* The PTL will determine if any change to either core team is appropriate.
 
 * Existing services code must be supported until deprecation.
 
@@ -74,7 +70,12 @@ Proposed Change
   and be maintained by that repo's team going forward.
 
 * Initially, the services repo will not have its own REST service, and will
-  utilize neutron extensions to share the neutron API namespace.
+  utilize neutron extensions to share the neutron API namespace.  Initially,
+  service plugins will be moved (Kilo-1); after the neutron REST refactor,
+  service extensions will be moved (Kilo-3), and the issue of a separate
+  service endpoint will be revisited in the L timeframe or later.  This is to
+  maintain API consistency during the split process while the new repositories
+  are being worked out.
 
 * The services repo will include neutron as a dependency in the
   requirements.txt file, and the services code may import neutron as a library.
@@ -85,7 +86,7 @@ Proposed Change
   services code as a library.
 
 * Extensions will stay inside the neutron repo, at least until after the REST
-  refactor, which will hopefully support out-of-tree extensions.
+  refactor.
 
 * Code merged onto the existing 'feature/lbaasv2' neutron feature branch will
   be merged into the service repo as part of the split.
@@ -137,7 +138,7 @@ None.
 Other End User Impact
 ---------------------
 
-There will be a new CLI/API client, and Horizon will need to reference the new library instead of Neutron, if it is doing any direct importing.
+None.
 
 Performance Impact
 ------------------
@@ -147,12 +148,49 @@ None.
 Other Deployer Impact
 ---------------------
 
-For two cycles, install of neutron should automatically install the advanced
-services project.  When going from Icehouse or Juno to Kilo, the upgrade
-script to move appropriate db and config data should be run.
+The new services project will have its own database and config file.  In
+addition, by the end of Kilo, neutron will need to load the services API
+extension.
 
-* Do we need to support reading data from neutron db and config file in a lazy
-  upgrade format, or as a fallback, to provide seamless upgrade?
+For Kilo, neutron will assume that the services repo exists, and include the
+path to its API extensions in the conf file by default.
+
+A db/conf upgrade command-line script will be provided, which will copy
+relevant database tables and configuration elements to the new db and INI file.
+
+In Kilo, a fresh install will end up doing the following steps:
+
+* Install neutron.  Services package will be pulled in as a dependency,
+its installer will run before neutron, initializing db, writing default config,
+then neutron will install as normal.
+
+* Deployer will edit neutron.conf for db and other info.
+
+* Deployer will edit services-tron.conf for db and other info.
+
+* Deployer will need to restart neutron-server.
+
+In Kilo, an upgrade from Juno or Icehouse will do the following steps:
+
+* Install neutron.  Services package will be pulled in as a dependency,
+its installer will run before neutron, initializing db, writing default config,
+then neutron will install as normal.
+
+* Deployer will edit neutron.conf for db and other info.
+
+* Deployer will edit services-tron.conf for db and other info.
+
+* Deployer will run services-db-migration script.
+
+* Deployer will need to restart neutron-server.
+
+In the upgrade scenario, the REST controller will bounce, but active services
+(load balancers, etc) will remain active.
+
+Open issue: between the install and the server restart, neutron-server will
+return errors for service API operations.  How to alleviate that, or is that
+an orchestration issue?
+
 
 Developer Impact
 ----------------
@@ -162,8 +200,8 @@ Anyone importing neutron.services will have to import the new project modules in
 Community Impact
 ----------------
 
-This split was discussed at the Neutron summit and the openstack-dev mailing
-list.
+This split was discussed at the Neutron summit, the openstack-dev mailing
+list, and multiple IRC meetings.
 
 Alternatives
 ------------
@@ -172,23 +210,18 @@ Alternatives
 
 * Services to stackforge.
 
-* Services split with its own REST server initially.
+* Services split with its own REST server endpoint.
 
 * Services shares neutron db and config.
 
 * Modify gerrit to allow different core teams in one repo.
+
 
 Implementation
 ==============
 
 Assignee(s)
 -----------
-
-Who is leading the writing of the code? Or is this a blueprint where you're
-throwing it out there to see who picks it up?
-
-If more than one person is working on the implementation, please designate the
-primary author and contact.
 
 Primary assignee:
   https://launchpad.net/~dougwig
@@ -243,7 +276,8 @@ Testing
 * Unit tests will split between repos, matching the code split.
 
 * Tempest tests will initiall remain unchanged, as the service endpoint will
-  be identical before and after the split.
+  be identical before and after the split.  Setup steps that touch db and/or
+  config files may need to be updated to reflect new locations.
 
 Tempest Tests
 -------------
@@ -270,18 +304,22 @@ documentation.
 User Documentation
 ------------------
 
-TBD
+Documentation referencing neutron.conf and the neutron db will need to be
+modified to reflect the new config file and database.
 
 Developer Documentation
 -----------------------
 
-None
+Documentation referencing neutron.conf and the neutron db will need to be
+modified to reflect the new config file and database.
 
 
 Q & A
 =====
 
 * Split or shared CLI/client?
+
+** Answer: Shared until REST service endpoing split.
 
 * Do we take this opportunity to re-org directories?
 
