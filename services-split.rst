@@ -14,7 +14,8 @@ https://blueprints.launchpad.net/neutron/+spec/services-split
 
 This spec outlines the technical changes required for the repo split.
 
-The following intro is shamelessly stolen from an email thread started by Mark McClain:
+The following intro is shamelessly stolen from an email thread started by
+Mark McClain:
 
 Over the last several months, the members of the Networking Program have been
 discussing ways to improve the management of our program.  When the Quantum
@@ -113,7 +114,8 @@ neutron.
 
 The services repo will have its own database migration chain.
 
-An initial db migration state will be created by starting from the neutron db state as of the split and stripping non-service related tables.
+An initial db migration state will be created by starting from the neutron
+db state as of the split and stripping non-service related tables.
 
 A db migration will be added to neutron to strip service tables.
 
@@ -195,7 +197,8 @@ an orchestration issue?
 Developer Impact
 ----------------
 
-Anyone importing neutron.services will have to import the new project modules instead.
+Anyone importing neutron.services will have to import the new project modules
+instead.
 
 Community Impact
 ----------------
@@ -317,9 +320,8 @@ modified to reflect the new config file and database.
 Q & A
 =====
 
-* Split or shared CLI/client?
-
-** Answer: Shared until REST service endpoing split.
+* Split or shared CLI/client? (Answer: Shared until REST service endpoint
+  split.)
 
 * Do we take this opportunity to re-org directories?
 
@@ -330,5 +332,3 @@ References
 * https://etherpad.openstack.org/p/neutron-services
 
 * http://lists.openstack.org/pipermail/openstack-dev/2014-November/050961.html
-
-* Other spec?
