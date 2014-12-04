@@ -12,7 +12,7 @@ https://blueprints.launchpad.net/neutron/+spec/neutron-flavor-framework
 
 The Flavor Framework spec introduces a static framework for creating different
 feature levels for a service.  This proposal adds the ability to have the
-objects being created for the service influence the flavor's behavior.
+objects being created for the service, influence the flavor's behavior.
 
 Problem Description
 ===================
@@ -47,11 +47,53 @@ This proposal suggests two changes to the existing flavor framework:
   above per-instance meta data.  Macro substitution will happen before the
   resulting "metadata" is passed to the backend plugin/driver, so drivers
   do not need to be aware of this templating.
+
+Examples:
+
+With the static flavor framework, you might have a flavor named "AwesomeSauce",
+which includes load balancing and DDoS protection, and the driver metadata might
+look like this:
+
+::
+
+  {
+    vendor_z23_ddos_protection = true
+  }
+
+and that is exactly what would be passed to the z23 lbaas driver.  With the
+templating syntax, that example becomes:
+
+::
+
+  {
+    vendor_z23_ddos_protection = true
+    z23_funky_whitelist = {{ meta.whitelist }}
+  }
+
+With a corresponsing flavor_meta field on the LoadBalancer object being:
+
+::
+
+  {
+    whitelist = [ '1.2.3.4', '8.8.8.8' ]
+  }
+
+and the resulting metadata passed to the driver would be:
+
+::
+
+  {
+    vendor_z23_ddos_protection = true
+    z23_funky_whitelist = [ '1.2.3.4', '8.8.8.8' ]
+  }
+
   
 Data Model Impact
 -----------------
 
 One new logical models will be added to the database.
+
+::
 
 FlavorMeta
   id: uuid
@@ -126,11 +168,26 @@ feature.
 Alternatives
 ------------
 
-The most straightforward alternative is to implement each feature natively into
-the services API.  In the aforementioned page caching example, add page caching
-as a feature in the API, with a URL exception list, and wait for all drivers
-to implement to that backend.
+* The first alternative is to do nothing.  This results in what many vendors are
+  doing today, which is to brew up proprietary neutron solutions in order to
+  expose more advanced features.  This results in inconsistent solutions for
+  operators, more difficulty tracking trunk, and vendor lock-in.
 
+* Another alternative is the same as this proposal minus the templating on the
+  flavor metadata.  Since the flavor metadata is tied to a particular driver,
+  and thus vendor specific, removing the templating would force vendors to expose
+  vendor specific goo to their end users.  In addition, since multiple service
+  profiles (drivers/vendors) can be used to implement a single flavor,
+  not having templating would mean that that multiple backend support would break
+  unless those backends supported the exact same back-end metadata, which
+  is unlikely and impractical.
+
+* Finally, the most straightforward alternative is to implement each feature
+  natively into the services API.  In the aforementioned page caching example,
+  add page caching as a feature in the API, with a URL exception list, and
+  wait for all drivers to implement to that backend.  This adds maintenance
+  and development load to the entire community, and means that Neutron will have
+  a built-in lag for adding new features that appear in the marketplace.
 
 Implementation
 ==============
